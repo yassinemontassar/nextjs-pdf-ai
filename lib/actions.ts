@@ -32,10 +32,10 @@ export async function analyzePdfWithGemini(pdfUrl: string): Promise<{ success: b
     // Define the schema for the analysis object using Zod
     const AnalysisItemSchema = z.object({
       id: z.number(),
-      title: z.string().describe("Title or short description of the analysis item"),
-      details: z.string().describe("Detailed explanation of the analysis item"),
-      type: z.enum(['error', 'warning', 'info', 'success']).describe("Type of the item: error, warning, info, or success"),
-      score: z.string().optional().describe("Score or grade if applicable"),
+      section: z.string().describe("Section of the CV/resume this feedback relates to, e.g., Work Experience, Education, Skills, etc."),
+      title: z.string().describe("Professional headline for the feedback"),
+      details: z.string().describe("Detailed, actionable feedback or suggestions"),
+      type: z.enum(['strength', 'improvement', 'missing', 'warning', 'info']).describe("Type of the item: strength, improvement, missing, warning, or info"),
       location: z.object({
         pageNumber: z.number().describe("Page number where the item is located"),
         coordinates: z.object({
@@ -47,8 +47,10 @@ export async function analyzePdfWithGemini(pdfUrl: string): Promise<{ success: b
     });
 
     const AnalysisResultSchema = z.object({
-      items: z.array(AnalysisItemSchema).describe("List of analysis items found in the document"),
-      summary: z.string().optional().describe("Overall summary of the analysis")
+      items: z.array(AnalysisItemSchema).describe("List of analysis items found in the CV/resume document"),
+      summary: z.string().optional().describe("Overall professional summary of the CV/resume"),
+      recommendations: z.array(z.string()).optional().describe("Top actionable recommendations for improvement"),
+      language: z.string().describe("Detected language of the resume, as a language code and name (e.g., 'fr' and 'French')")
     });
 
     // Use AI SDK Core to generate structured object with the PDF as an attachment
@@ -58,16 +60,16 @@ export async function analyzePdfWithGemini(pdfUrl: string): Promise<{ success: b
       messages: [
         {
           role: 'system',
-          content: `You are an AI assistant that performs in-depth analysis of academic documents.`
+          content: `You are a professional career coach and resume reviewer. Your task is to analyze CV/resume documents and provide structured, actionable, and professional feedback to help the candidate improve their chances of success.`
         },
         {
           role: 'user',
-          content: `Please analyze the PDF document and identify issues, errors, or notable points in the content.\n\nFor each point you identify:\n1. Provide a concise title describing the issue\n2. Add detailed explanation of the issue\n3. Classify it as 'error', 'warning', 'info', or 'success'\n4. If relevant, provide a score or assessment\n5. Include location information (page number and approximate coordinates)\n\nPay special attention to:\n- Mathematical notation and formula errors\n- Conceptual errors in problem solving\n- Quality of reasoning and logic\n- Notable strengths or correct applications\n\nFor coordinates, use relative positions within the page:\n- startY: approximate start position (0-800 where 0 is top of page)\n- endY: approximate end position (0-800 where 800 is bottom of page)\n- x: left-right position (typically use 50 to place annotations on the left margin)`,
+          content: `Please analyze the attached PDF resume. For each section (e.g., Contact Information, Summary, Work Experience, Education, Skills, Certifications, Projects, etc.), provide:\n\n1. A concise, professional headline for your feedback. IMPORTANT: Do NOT include any numbers or IDs in your titles (like \"1.09 Focus on Results\").\n2. Detailed, actionable feedback or suggestions.\n3. Classify each point as a 'strength', 'improvement', 'missing', 'warning', or 'info'.\n4. Indicate the section of the CV this feedback relates to.\n5. DO include approximate page number and location (top, middle, bottom) of the section you're commenting on so we can highlight it.\n\nAt the end, provide an overall summary and a list of top recommendations for improvement.\n\nIMPORTANT: Also detect and return the language of the resume as a language code and name (e.g., 'fr' and 'French') in a 'language' field in your response object.\n\nIMPORTANT: Your entire response (all feedback, summary, recommendations, etc.) must be written in the same language as the resume. For example, if the resume is in French, respond in French; if in English, respond in English, etc.\n\nFocus on:\n- Clarity and professionalism of presentation\n- Relevance and impact of experience and skills\n- Quantifiable achievements\n- Consistency and formatting\n- Missing or weak sections\n- Common resume pitfalls (e.g., typos, vague language, lack of results)\n\nOutput must be a structured object matching the provided schema.`,
           experimental_attachments: [
             {
               url: pdfUrl,
               contentType: 'application/pdf',
-              name: 'document.pdf'
+              name: 'resume.pdf'
             }
           ]
         }

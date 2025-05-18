@@ -2,6 +2,8 @@
 
 import { Dispatch, SetStateAction, useState } from "react";
 import { analyzePdfWithGemini } from "@/lib/actions";
+import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface PdfAnalyzerButtonProps {
   pdfUrl: string;
@@ -15,9 +17,10 @@ export default function PdfAnalyzerButton({
   setIsAnalyzing 
 }: PdfAnalyzerButtonProps) {
   const [error, setError] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzingState] = useState(false);
 
   const analyzePdf = async () => {
-    setIsAnalyzing(true);
+    setIsAnalyzingState(true);
     setError(null);
     setAnalysisResult(null);
     
@@ -33,23 +36,24 @@ export default function PdfAnalyzerButton({
       console.error('Failed to analyze PDF:', err);
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
-      setIsAnalyzing(false);
+      setIsAnalyzingState(false);
     }
   };
 
   return (
-    <div className="flex flex-col gap-4 w-full max-w-2xl mx-auto mt-6">
-      <button
+    <div className="flex flex-col gap-4 w-full items-center">
+      <Button
         onClick={analyzePdf}
-        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-400"
+        disabled={isAnalyzing}
+        size="lg"
+        className="w-full max-w-xs text-base font-semibold shadow-md"
       >
-        Analyze PDF with Gemini
-      </button>
-
+        {isAnalyzing ? "Analyzing..." : "Analyze CV/Resume PDF"}
+      </Button>
       {error && (
-        <div className="p-4 border border-red-300 bg-red-50 text-red-700 rounded-md">
-          {error}
-        </div>
+        <Alert variant="destructive" className="w-full max-w-xs">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
     </div>
   );

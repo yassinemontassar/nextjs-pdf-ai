@@ -1,11 +1,13 @@
-// PDF Analysis types
+// CV/Resume Analysis types
+
+export type AnalysisType = 'strength' | 'improvement' | 'missing' | 'warning' | 'info';
 
 export interface AnalysisItem {
   id: number;
-  title: string;
-  details: string;
-  type: 'error' | 'warning' | 'info' | 'success';
-  score?: string;
+  section: string; // e.g., Work Experience, Education, Skills
+  title: string; // Professional headline for the feedback
+  details: string; // Detailed, actionable feedback
+  type: AnalysisType;
   location?: {
     pageNumber: number;
     coordinates?: {
@@ -18,7 +20,9 @@ export interface AnalysisItem {
 
 export interface AnalysisResult {
   items: AnalysisItem[];
-  summary?: string;
+  summary?: string; // Overall professional summary
+  recommendations?: string[]; // Top actionable next steps
+  language?: string; // Detected language of the resume
 }
 
 export interface BracketAnnotation {
