@@ -6,8 +6,8 @@ import PdfCorrectionViewer from "@/components/pdf-correction-viewer"
 
 export default function Home() {
   // Use a single source of truth for the PDF URL
-    // The PDF URL is hardcoded in both the button and the viewer for consistency
-    const pdfUrl = "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf"
+  // The PDF URL from the user's conversation
+  const pdfUrl = "https://storage.googleapis.com/loumo-437409.firebasestorage.app/exams/GpYB0zQPUPLi9iBnEYzH/copies/73dc2560-6458-461c-a2b4-58508c505c59_anglais_theo_vienne.pdf"
 
   // Shared state for analysis results and status
   const [analysisResult, setAnalysisResult] = useState<string | null>(null)

@@ -1,12 +1,14 @@
 'use server'
 
 import { google } from '@ai-sdk/google';
-import { generateText } from 'ai';
+import { generateObject } from 'ai';
+import { z } from 'zod';
+import { AnalysisResult } from './types';
 
 /**
- * Server Action to analyze a PDF document using Gemini
+ * Server Action to analyze a PDF document using Gemini with structured output
  * @param pdfUrl URL to the PDF document
- * @returns The analysis text
+ * @returns The analysis in structured format
  */
 export async function analyzePdfWithGemini(pdfUrl: string): Promise<{ success: boolean; analysis?: string; error?: string }> {
   if (!pdfUrl) {
@@ -27,14 +29,40 @@ export async function analyzePdfWithGemini(pdfUrl: string): Promise<{ success: b
       };
     }
 
-    // Use AI SDK Core to generate text with the PDF as an attachment
-    const result = await generateText({
+    // Define the schema for the analysis object using Zod
+    const AnalysisItemSchema = z.object({
+      id: z.number(),
+      title: z.string().describe("Title or short description of the analysis item"),
+      details: z.string().describe("Detailed explanation of the analysis item"),
+      type: z.enum(['error', 'warning', 'info', 'success']).describe("Type of the item: error, warning, info, or success"),
+      score: z.string().optional().describe("Score or grade if applicable"),
+      location: z.object({
+        pageNumber: z.number().describe("Page number where the item is located"),
+        coordinates: z.object({
+          startY: z.number().describe("Starting Y coordinate in the page (in pixels)"),
+          endY: z.number().describe("Ending Y coordinate in the page (in pixels)"),
+          x: z.number().optional().describe("X coordinate for the annotation")
+        }).optional().describe("Visual coordinates for annotation")
+      }).optional().describe("Location information for the analysis item")
+    });
+
+    const AnalysisResultSchema = z.object({
+      items: z.array(AnalysisItemSchema).describe("List of analysis items found in the document"),
+      summary: z.string().optional().describe("Overall summary of the analysis")
+    });
+
+    // Use AI SDK Core to generate structured object with the PDF as an attachment
+    const result = await generateObject({
       model: google('gemini-2.0-flash'),
+      schema: AnalysisResultSchema,
       messages: [
         {
+          role: 'system',
+          content: `You are an AI assistant that performs in-depth analysis of academic documents.`
+        },
+        {
           role: 'user',
-          content: 'Please analyze this PDF document and provide a comprehensive summary.',
-          // content: 'Please analyze the PDF and provide the following information in JSON format: 1) The title of the document, 2) The exact page number where the title appears, 3) The bounding box coordinates (x, y, width, height) of the title text in the format {x: number, y: number, width: number, height: number}. These coordinates should be in points (pt) relative to the page dimensions.',
+          content: `Please analyze the PDF document and identify issues, errors, or notable points in the content.\n\nFor each point you identify:\n1. Provide a concise title describing the issue\n2. Add detailed explanation of the issue\n3. Classify it as 'error', 'warning', 'info', or 'success'\n4. If relevant, provide a score or assessment\n5. Include location information (page number and approximate coordinates)\n\nPay special attention to:\n- Mathematical notation and formula errors\n- Conceptual errors in problem solving\n- Quality of reasoning and logic\n- Notable strengths or correct applications\n\nFor coordinates, use relative positions within the page:\n- startY: approximate start position (0-800 where 0 is top of page)\n- endY: approximate end position (0-800 where 800 is bottom of page)\n- x: left-right position (typically use 50 to place annotations on the left margin)`,
           experimental_attachments: [
             {
               url: pdfUrl,
@@ -46,10 +74,11 @@ export async function analyzePdfWithGemini(pdfUrl: string): Promise<{ success: b
       ]
     });
 
+    // Convert the result to a string for storage/transmission
     console.log('Analysis complete');
     return {
       success: true,
-      analysis: result.text
+      analysis: JSON.stringify(result.object)
     };
   } catch (error) {
     console.error('Error analyzing PDF:', error);
