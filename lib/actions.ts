@@ -41,8 +41,8 @@ export async function analyzePdfWithGemini(pdfUrl: string): Promise<{ success: b
         coordinates: z.object({
           startY: z.number().describe("Starting Y coordinate in the page (in pixels)"),
           endY: z.number().describe("Ending Y coordinate in the page (in pixels)"),
-          x: z.number().optional().describe("X coordinate for the annotation")
-        }).optional().describe("Visual coordinates for annotation")
+          x: z.number().optional().describe("X coordinate (optional)")
+        }).optional().describe("Visual coordinates for the item")
       }).optional().describe("Location information for the analysis item")
     });
 

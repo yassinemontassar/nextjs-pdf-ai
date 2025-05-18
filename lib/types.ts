@@ -23,14 +23,4 @@ export interface AnalysisResult {
   summary?: string; // Overall professional summary
   recommendations?: string[]; // Top actionable next steps
   language?: string; // Detected language of the resume
-}
-
-export interface BracketAnnotation {
-  id: string;
-  pageNumber: number;
-  startY: number; 
-  endY: number;
-  x: number;
-  color?: string;
-  linkedItem: number;
 } 

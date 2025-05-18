@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator"
 export default function Home() {
   // Use a single source of truth for the PDF URL
   // The PDF URL from the user's conversation
-  const pdfUrl = "http://localhost:3000/french.pdf"
+  const pdfUrl = "http://localhost:3000/cv.pdf"
 
   // Shared state for analysis results and status
   const [analysisResult, setAnalysisResult] = useState<string | null>(null)
